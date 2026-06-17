@@ -62,7 +62,7 @@ with st.sidebar.expander("🐷 Add Savings/Investment", expanded=False):
 
 # --- NEW: RESET SYSTEM ---
 st.sidebar.markdown("---")
-st.sidebar.header("⚙️ Danger Zone")
+st.sidebar.header("⚙️")
 if st.sidebar.button("🔴 Reset Data", help="This will clear your logged income, expenses, and savings."):
     st.session_state.clear()  # Wipes the active session memory
     st.toast("All data has been reset!")
