@@ -60,6 +60,15 @@ with st.sidebar.expander("🐷 Add Savings/Investment", expanded=False):
             st.session_state["saving_records"].append({"Date": pd.to_datetime(sav_date), "Description": sav_desc, "Category": "Savings", "Budget Type": "Savings", "Amount": sav_amt})
             st.toast("Savings recorded!")
 
+# --- NEW: RESET SYSTEM ---
+st.sidebar.markdown("---")
+st.sidebar.header("⚙️ Danger Zone")
+if st.sidebar.button("🔴 Reset Dashboard Data", help="This will clear your logged income, expenses, and savings."):
+    st.session_state.clear()  # Wipes the active session memory
+    st.toast("All data has been reset!")
+    st.rerun()  # Forces Streamlit to instantly refresh the page with empty values
+# -------------------------
+
 # 3. Data Processing
 df_inc = pd.DataFrame(st.session_state["income_records"])
 df_exp = pd.DataFrame(st.session_state["expense_records"])
@@ -75,9 +84,9 @@ target_needs = total_income * 0.50
 target_wants = total_income * 0.30
 target_savings_total = total_income * 0.20
 
-# Smart Breakdown of the 20% Savings Target based on market rates
-suggested_cash_savings = target_savings_total * 0.30  # 30% of savings to liquid cash
-suggested_investments = target_savings_total * 0.70   # 70% of savings to index funds
+# Smart Breakdown of the 20% Savings Target
+suggested_cash_savings = target_savings_total * 0.30
+suggested_investments = target_savings_total * 0.70
 
 actual_needs = df_exp[df_exp["Budget Type"] == "Needs"]["Amount"].sum() if not df_exp.empty else 0.0
 actual_wants = df_exp[df_exp["Budget Type"] == "Wants"]["Amount"].sum() if not df_exp.empty else 0.0
@@ -96,13 +105,11 @@ else:
 
     st.markdown("---")
 
-    # NEW SECTION: Market-Based Suggestions
+    # Market-Based Suggestions
     st.subheader("💡 Market-Based Investment Advisor")
-    
-    # Displaying current market conditions metrics
     market_col1, market_col2 = st.columns(2)
     with market_col1:
-        st.info(f"**Current Safe Cash Rate (HYSA/CD):** `{HYSA_RATE*100:.2f}% API` \n\nBest for short-term emergency funds.")
+        st.info(f"**Current Safe Cash Rate (HYSA/CD):** `{HYSA_RATE*100:.2f}% APY` \n\nBest for short-term emergency funds.")
     with market_col2:
         st.success(f"**Estimated Market Return (Index Funds):** `{MARKET_RATE*100:.2f}% CAGR` \n\nBest for long-term wealth building.")
 
@@ -112,16 +119,13 @@ else:
     with adv_col1:
         st.markdown(f"### 🏦 Liquid Cash Savings: **{currency_symbol}{suggested_cash_savings:,.2f}**")
         st.markdown(f"""
-        * **Where to put it:** High-Yield Savings Account or Money Market Funds.
-        * **Why:** At current **{HYSA_RATE*100:.1f}%** rates, your cash keeps up with inflation while staying 100% safe. 
-        * **Estimated 1-Year Growth on this month's cash:** `+{currency_symbol}{suggested_cash_savings * HYSA_RATE:,.2f}`
+        * **Where to put it:** High-Yield Savings Account.
+        * **Estimated 1-Year Growth:** `+{currency_symbol}{suggested_cash_savings * HYSA_RATE:,.2f}`
         """)
-
     with adv_col2:
         st.markdown(f"### 📈 Long-Term Investments: **{currency_symbol}{suggested_investments:,.2f}**")
         st.markdown(f"""
-        * **Where to put it:** Broad-market equity ETFs (like an S&P 500 or Total World index fund).
-        * **Why:** Equities historically outperform cash. Compounding at a conservative **{MARKET_RATE*100:.1f}%** market rate is critical for building long-term wealth.
+        * **Where to put it:** Broad-market equity ETFs (like the S&P 500).
         * **Estimated 10-Year Value (Compounded):** `{currency_symbol}{suggested_investments * ((1 + MARKET_RATE)**10):,.2f}`
         """)
 
