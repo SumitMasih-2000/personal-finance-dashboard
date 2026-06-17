@@ -3,9 +3,30 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+import os
+from PIL import Image, ImageDraw
 
 # 1. Page Configuration
 st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
+
+# Helper function to generate a backup logo if the file is missing
+def get_dashboard_logo():
+    img_path = "financial_advisor.png"
+    # Check if the file actually exists on the server
+    if os.path.exists(img_path):
+        try:
+            return Image.open(img_path)
+        except Exception:
+            pass
+    
+    # Fallback: Create a clean, professional geometric logo using code
+    img = Image.new("RGB", (200, 200), color="#1E3A8A") # Dark blue background
+    draw = ImageDraw.Draw(img)
+    # Draw a stylized gold/yellow coin/chart representation
+    draw.ellipse([40, 40, 160, 160], fill="#FBBF24") # Gold circle
+    draw.rectangle([70, 90, 90, 140], fill="#1E3A8A") # Chart Bar 1
+    draw.rectangle([100, 70, 120, 140], fill="#1E3A8A") # Chart Bar 2
+    return img
 
 # Initialize session state lists for user entries if they don't exist yet
 if "income_records" not in st.session_state:
@@ -91,11 +112,14 @@ suggested_investments = target_savings_total * 0.70
 actual_needs = df_exp[df_exp["Budget Type"] == "Needs"]["Amount"].sum() if not df_exp.empty else 0.0
 actual_wants = df_exp[df_exp["Budget Type"] == "Wants"]["Amount"].sum() if not df_exp.empty else 0.0
 
+# Load the logo object safely
+logo_image = get_dashboard_logo()
+
 # 4. Dashboard Main View
 if total_income == 0:
     welcome_col1, welcome_col2 = st.columns([1, 6])
     with welcome_col1:
-        st.image("financial_advisor.png", use_container_width=True)
+        st.image(logo_image, use_container_width=True)
     with welcome_col2:
         st.title("Smart Personal Finance Hub")
         st.info("Welcome! Please log an **Income Source** in the sidebar to populate your financial dashboard.", icon=":material/info:")
@@ -103,14 +127,14 @@ else:
     # Title Header with your custom graphic
     title_col1, title_col2 = st.columns([1, 6]) 
     with title_col1:
-        st.image("financial_advisor.png", use_container_width=True) 
+        st.image(logo_image, use_container_width=True) 
     with title_col2:
         st.title("Smart Personal Finance Hub")
         st.markdown("### *Active Wealth Optimization & Market Analysis*")
     
     st.markdown("---")
     
-    # Row 1: High Level Metrics (Clean material icons)
+    # Row 1: High Level Metrics
     st.subheader(":material/grid_view: Financial Status Cards")
     kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
     kpi_col1.metric("Total Income", f"{currency_symbol}{total_income:,.2f}")
