@@ -34,14 +34,32 @@ if "saving_records" not in st.session_state:
     st.session_state["saving_records"] = []
 
 # 2. Sidebar Settings & Forms
-st.sidebar.header(":material/public: Global Settings")
+
+# VERTICAL ACCENT 1: Global Settings
+st.sidebar.markdown(
+    """
+    <div style="border-left: 5px solid #4C9AFF; padding-left: 10px; margin-bottom: 15px;">
+        <h3 style="margin:0; padding:0; font-size: 1.15rem; color: #FFFFFF;">🌍 Global Settings</h3>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 currency_symbol = st.sidebar.selectbox("Select Currency:", ["$", "₹", "€", "£", "¥"], index=0)
 
 HYSA_RATE = 0.0425  
 MARKET_RATE = 0.090  
 
 st.sidebar.markdown("---")
-st.sidebar.header(":material/edit_note: Add New Records")
+
+# VERTICAL ACCENT 2: Add New Records
+st.sidebar.markdown(
+    """
+    <div style="border-left: 5px solid #4C9AFF; padding-left: 10px; margin-bottom: 15px;">
+        <h3 style="margin:0; padding:0; font-size: 1.15rem; color: #FFFFFF;">📝 Add New Records</h3>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
 
 # FORM A: INCOME
 with st.sidebar.expander("Add Income Source", expanded=False):
@@ -156,9 +174,9 @@ else:
                 'bar': {'color': "#0052CC"},
                 'bgcolor': "#111111",
                 'steps': [
-                    {'range': [0, 20], 'color': '#331111'},     # Critical / Over-budget
-                    {'range': [20, 40], 'color': '#222222'},    # Low retention
-                    {'range': [40, 100], 'color': '#052211'}    # Balanced / High savings
+                    {'range': [0, 20], 'color': '#331111'},     
+                    {'range': [20, 40], 'color': '#222222'},    
+                    {'range': [40, 100], 'color': '#052211'}    
                 ],
             }
         ))
