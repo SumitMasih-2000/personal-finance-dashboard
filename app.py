@@ -45,9 +45,6 @@ if "chat_history" not in st.session_state:
 st.sidebar.header(":material/public: Global Settings")
 currency_symbol = st.sidebar.selectbox("Select Currency:", ["$", "₹", "€", "£", "¥"], index=0)
 
-# Unmasked text field to view key clearly as requested
-api_key = st.sidebar.text_input("Enter OpenAI API Key:", help="Needed to power the AI Advisor Chatbot")
-
 HYSA_RATE = 0.0425  
 MARKET_RATE = 0.090  
 
@@ -180,70 +177,70 @@ else:
     with bot_col1:
         st.subheader(":material/smart_toy: AI Financial Advisor Chatbot")
         
-        if not api_key:
-            st.warning("Please enter an OpenAI API Key in the sidebar settings to communicate with your AI Advisor.")
-        else:
-            # Display chat history container
-            chat_container = st.container(height=320)
+        # Display chat history container
+        chat_container = st.container(height=320)
+        with chat_container:
+            for message in st.session_state["chat_history"]:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+        
+        # User Input Box
+        if user_prompt := st.chat_input("Ask a question (e.g., 'Am I spending too much on Wants?')"):
+            # Append user query
+            st.session_state["chat_history"].append({"role": "user", "content": user_prompt})
             with chat_container:
-                for message in st.session_state["chat_history"]:
-                    with st.chat_message(message["role"]):
-                        st.markdown(message["content"])
+                with st.chat_message("user"):
+                    st.markdown(user_prompt)
+                    
+            # Formulate system instruction containing tracking parameters and return rates
+            system_instruction = f"""
+            You are an expert, highly analytical personal wealth optimization AI. 
+            Your purpose is to answer user queries comprehensively regarding income, expenses, savings strategies, and investment parameters.
+
+            Active Financial Ledger Values to Use in Calculations:
+            - Currency Base: {currency_symbol}
+            - Total Income Inflow: {currency_symbol}{total_income:,.2f}
+            - Current Expenses Outflow: {currency_symbol}{total_expenses:,.2f} (Needs: {currency_symbol}{actual_needs:,.2f} vs Target: {currency_symbol}{target_needs:,.2f} | Wants: {currency_symbol}{actual_wants:,.2f} vs Target: {currency_symbol}{target_wants:,.2f})
+            - Total Allocated Savings: {currency_symbol}{total_savings:,.2f} (Target allocation setup: {currency_symbol}{target_savings_total:,.2f})
+            - Free Wallet Cash Balance: {currency_symbol}{remaining_cash:,.2f}
+
+            Fixed Baseline Return Interest Rates:
+            1. High-Yield Cash Savings (HYSA): {HYSA_RATE*100:.2f}% APY
+            2. Market Equity / Index Fund Multiplier: {MARKET_RATE*100:.2f}% CAGR
+
+            Analytical Directives:
+            - If asked about savings or investments, project potential wealth creation out 1-year, 5-years, or 10-years using the active interest rates provided above.
+            - Provide actionable recommendations derived exactly from the data gaps between their Target Matrix allocations and Actual performance.
+            - Respond with extreme precision using bullet points and tables where appropriate. Keep it concise but deeply informative.
+            """
             
-            # User Input Box
-            if user_prompt := st.chat_input("Ask a question (e.g., 'Am I spending too much on Wants?')"):
-                # Append user query
-                st.session_state["chat_history"].append({"role": "user", "content": user_prompt})
-                with chat_container:
-                    with st.chat_message("user"):
-                        st.markdown(user_prompt)
-                        
-                # Formulate system instruction containing tracking parameters and return rates
-                system_instruction = f"""
-                You are an expert, highly analytical personal wealth optimization AI. 
-                Your purpose is to answer user queries comprehensively regarding income, expenses, savings strategies, and investment parameters.
-
-                Active Financial Ledger Values to Use in Calculations:
-                - Currency Base: {currency_symbol}
-                - Total Income Inflow: {currency_symbol}{total_income:,.2f}
-                - Current Expenses Outflow: {currency_symbol}{total_expenses:,.2f} (Needs: {currency_symbol}{actual_needs:,.2f} vs Target: {currency_symbol}{target_needs:,.2f} | Wants: {currency_symbol}{actual_wants:,.2f} vs Target: {currency_symbol}{target_wants:,.2f})
-                - Total Allocated Savings: {currency_symbol}{total_savings:,.2f} (Target allocation setup: {currency_symbol}{target_savings_total:,.2f})
-                - Free Wallet Cash Balance: {currency_symbol}{remaining_cash:,.2f}
-
-                Fixed Baseline Return Interest Rates:
-                1. High-Yield Cash Savings (HYSA): {HYSA_RATE*100:.2f}% APY
-                2. Market Equity / Index Fund Multiplier: {MARKET_RATE*100:.2f}% CAGR
-
-                Analytical Directives:
-                - If asked about savings or investments, project potential wealth creation out 1-year, 5-years, or 10-years using the active interest rates provided above.
-                - Provide actionable recommendations derived exactly from the data gaps between their Target Matrix allocations and Actual performance.
-                - Respond with extreme precision using bullet points and tables where appropriate. Keep it concise but deeply informative.
-                """
+            try:
+                # Pull API key seamlessly from background configuration environment
+                api_backend_key = st.secrets["OPENAI_API_KEY"]
+                client = OpenAI(api_key=api_backend_key)
                 
-                try:
-                    client = OpenAI(api_key=api_key)
-                    # Prepare message list for API call
-                    api_messages = [{"role": "system", "content": system_instruction}] + [
-                        {"role": m["role"], "content": m["content"]} for m in st.session_state["chat_history"]
-                    ]
-                    
-                    # Generate response
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=api_messages,
-                        temperature=0.5
-                    )
-                    
-                    bot_reply = response.choices[0].message.content
-                    
-                    # Append bot response
-                    st.session_state["chat_history"].append({"role": "assistant", "content": bot_reply})
-                    with chat_container:
-                        with st.chat_message("assistant"):
-                            st.markdown(bot_reply)
-                            
-                except Exception as e:
-                    st.error(f"Failed to communicate with AI: {str(e)}")
+                # Prepare message list for API call
+                api_messages = [{"role": "system", "content": system_instruction}] + [
+                    {"role": m["role"], "content": m["content"]} for m in st.session_state["chat_history"]
+                ]
+                
+                # Generate response
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=api_messages,
+                    temperature=0.5
+                )
+                
+                bot_reply = response.choices[0].message.content
+                
+                # Append bot response
+                st.session_state["chat_history"].append({"role": "assistant", "content": bot_reply})
+                with chat_container:
+                    with st.chat_message("assistant"):
+                        st.markdown(bot_reply)
+                        
+            except Exception as e:
+                st.error(f"Failed to communicate with AI: {str(e)}")
 
     with bot_col2:
         st.subheader(":material/account_balance_wallet: Strategic Optimization Metrics")
