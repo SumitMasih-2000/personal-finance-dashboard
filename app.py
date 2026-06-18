@@ -19,13 +19,13 @@ def get_dashboard_logo():
         except Exception:
             pass
     
-    # Fallback: Create a clean, professional geometric logo using code
-    img = Image.new("RGB", (200, 200), color="#1E3A8A") # Dark blue background
+    # Fallback: Create a clean, professional black/blue geometric logo using code
+    img = Image.new("RGB", (200, 200), color="#000000") # Black background
     draw = ImageDraw.Draw(img)
-    # Draw a stylized gold/yellow coin/chart representation
-    draw.ellipse([40, 40, 160, 160], fill="#FBBF24") # Gold circle
-    draw.rectangle([70, 90, 90, 140], fill="#1E3A8A") # Chart Bar 1
-    draw.rectangle([100, 70, 120, 140], fill="#1E3A8A") # Chart Bar 2
+    # Draw a stylized white/blue coin/chart representation
+    draw.ellipse([40, 40, 160, 160], fill="#0052CC") # Vivid Blue circle
+    draw.rectangle([70, 90, 90, 140], fill="#FFFFFF") # White Bar 1
+    draw.rectangle([100, 70, 120, 140], fill="#E6F0FF") # Light Blue Bar 2
     return img
 
 # Initialize session state lists for user entries if they don't exist yet
@@ -178,8 +178,9 @@ else:
         st.write("#### Target Matrix vs. Actual Performance")
         categories = ['Needs (50%)', 'Wants (30%)', 'Savings (20%)']
         fig_compare = go.Figure()
-        fig_compare.add_trace(go.Bar(name='Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#A6C8FF'))
-        fig_compare.add_trace(go.Bar(name='Your Outflows', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#1E3A8A'))
+        # Changed target bar to Light Cool Grey/Blue and actual bar to Crisp Corporate Blue
+        fig_compare.add_trace(go.Bar(name='Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#E6F0FF'))
+        fig_compare.add_trace(go.Bar(name='Your Outflows', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#0052CC'))
         fig_compare.update_layout(barmode='group', height=300, margin=dict(l=20, r=20, t=20, b=20))
         st.plotly_chart(fig_compare, use_container_width=True)
         
@@ -187,7 +188,9 @@ else:
         st.write("#### Resource Distribution Matrix")
         combined_outflows = pd.concat([df_exp, df_sav], ignore_index=True) if (not df_exp.empty or not df_sav.empty) else pd.DataFrame()
         if not combined_outflows.empty:
-            fig_donut = px.pie(combined_outflows, values='Amount', names='Category', hole=0.4, color_discrete_sequence=px.colors.sequential.YlGnBu_r)
+            # Custom Black, White, and Blue sequential sequence
+            bw_blue_sequence = ['#000000', '#0052CC', '#4C9AFF', '#B3D4FF', '#E6F0FF']
+            fig_donut = px.pie(combined_outflows, values='Amount', names='Category', hole=0.4, color_discrete_sequence=bw_blue_sequence)
             fig_donut.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig_donut, use_container_width=True)
         else:
