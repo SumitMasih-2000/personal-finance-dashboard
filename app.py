@@ -85,7 +85,7 @@ with st.sidebar.expander("Add Savings/Investment", expanded=False):
 
 # RESET SYSTEM
 st.sidebar.markdown("---")
-st.sidebar.header(":material/settings: Danger Zone")
+st.sidebar.header(":material/settings:")
 if st.sidebar.button("Reset Dashboard Data", type="primary"):
     st.session_state.clear()
     st.toast("All data reset!")
