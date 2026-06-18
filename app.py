@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 from datetime import datetime
 import os
 from PIL import Image, ImageDraw
+# Import OpenAI for the chatbot integration
+from openai import OpenAI
 
 # 1. Page Configuration
 st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
@@ -12,23 +14,20 @@ st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
 # Helper function to generate a backup logo if the file is missing
 def get_dashboard_logo():
     img_path = "financial_advisor.png"
-    # Check if the file actually exists on the server
     if os.path.exists(img_path):
         try:
             return Image.open(img_path)
         except Exception:
             pass
     
-    # Fallback: Create a clean, professional black/blue geometric logo using code
-    img = Image.new("RGB", (200, 200), color="#000000") # Black background
+    img = Image.new("RGB", (200, 200), color="#000000") 
     draw = ImageDraw.Draw(img)
-    # Draw a stylized white/blue coin/chart representation
-    draw.ellipse([40, 40, 160, 160], fill="#0052CC") # Vivid Blue circle
-    draw.rectangle([70, 90, 90, 140], fill="#FFFFFF") # White Bar 1
-    draw.rectangle([100, 70, 120, 140], fill="#E6F0FF") # Light Blue Bar 2
+    draw.ellipse([40, 40, 160, 160], fill="#0052CC") 
+    draw.rectangle([70, 90, 90, 140], fill="#FFFFFF") 
+    draw.rectangle([100, 70, 120, 140], fill="#E6F0FF") 
     return img
 
-# Initialize session state lists for user entries if they don't exist yet
+# Initialize session state lists for data if they don't exist
 if "income_records" not in st.session_state:
     st.session_state["income_records"] = []
 if "expense_records" not in st.session_state:
@@ -36,11 +35,19 @@ if "expense_records" not in st.session_state:
 if "saving_records" not in st.session_state:
     st.session_state["saving_records"] = []
 
+# Initialize Chat History for the Chatbot
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = [
+        {"role": "assistant", "content": "Hello! I am your AI Financial Advisor. Ask me anything about your current income, expenses, savings goals, or general investing strategies."}
+    ]
+
 # 2. Sidebar Settings & Forms
 st.sidebar.header(":material/public: Global Settings")
 currency_symbol = st.sidebar.selectbox("Select Currency:", ["$", "₹", "€", "£", "¥"], index=0)
 
-# Current Market Rates (Baseline for 2026)
+# Securely pull API Key from sidebar or environment variable
+api_key = st.sidebar.text_input("Enter OpenAI API Key:", type="password", help="Needed to power the AI Advisor Chatbot")
+
 HYSA_RATE = 0.0425  
 MARKET_RATE = 0.090  
 
@@ -101,7 +108,6 @@ total_expenses = df_exp["Amount"].sum() if not df_exp.empty else 0.0
 total_savings = df_sav["Amount"].sum() if not df_sav.empty else 0.0
 remaining_cash = total_income - total_expenses - total_savings
 
-# 50/30/20 Calculations
 target_needs = total_income * 0.50
 target_wants = total_income * 0.30
 target_savings_total = total_income * 0.20
@@ -112,7 +118,6 @@ suggested_investments = target_savings_total * 0.70
 actual_needs = df_exp[df_exp["Budget Type"] == "Needs"]["Amount"].sum() if not df_exp.empty else 0.0
 actual_wants = df_exp[df_exp["Budget Type"] == "Wants"]["Amount"].sum() if not df_exp.empty else 0.0
 
-# Load the logo object safely
 logo_image = get_dashboard_logo()
 
 # 4. Dashboard Main View
@@ -124,7 +129,6 @@ if total_income == 0:
         st.title("Smart Personal Finance Hub")
         st.info("Welcome! Please log an **Income Source** in the sidebar to populate your financial dashboard.", icon=":material/info:")
 else:
-    # Title Header with your custom graphic
     title_col1, title_col2 = st.columns([1, 6]) 
     with title_col1:
         st.image(logo_image, use_container_width=True) 
@@ -144,33 +148,7 @@ else:
 
     st.markdown("---")
 
-    # Advisor Suggestions
-    st.subheader(":material/account_balance_wallet: Financial Advisor Suggestions")
-    market_col1, market_col2 = st.columns(2)
-    with market_col1:
-        st.info(f"**High-Yield Cash Return:** `{HYSA_RATE*100:.2f}% APY` \n\nSecure foundation for your rainy-day reserves.", icon=":material/account_balance:")
-    with market_col2:
-        st.success(f"**Market Wealth Multiplier:** `{MARKET_RATE*100:.2f}% CAGR` \n\nTarget long-term inflation-beating portfolios.", icon=":material/trending_up:")
-
-    st.write(f"Based on your income, your optimized **:material/balance: 50/30/20 Budget Target** allocations look like this:")
-
-    adv_col1, adv_col2 = st.columns(2)
-    with adv_col1:
-        st.markdown(f"### :material/shield: Cash Safety Net: **{currency_symbol}{suggested_cash_savings:,.2f}**")
-        st.markdown(f"""
-        * **Vehicle:** Liquid Premium Bank Account / Money Market.
-        * **Projected 1-Year Returns:** `+{currency_symbol}{suggested_cash_savings * HYSA_RATE:,.2f}`
-        """)
-    with adv_col2:
-        st.markdown(f"### :material/rocket_launch: Compound Investments: **{currency_symbol}{suggested_investments:,.2f}**")
-        st.markdown(f"""
-        * **Vehicle:** Globally Diversified Equity Index ETFs.
-        * **Projected 10-Year Compounded Matrix:** `{currency_symbol}{suggested_investments * ((1 + MARKET_RATE)**10):,.2f}`
-        """)
-
-    st.markdown("---")
-    
-    # Row 3: Charts
+    # Row 2: Charts & Visualizations
     st.subheader(":material/analytics: Visualizations Matrix")
     chart_col1, chart_col2 = st.columns(2)
     
@@ -178,7 +156,6 @@ else:
         st.write("#### Target Matrix vs. Actual Performance")
         categories = ['Needs (50%)', 'Wants (30%)', 'Savings (20%)']
         fig_compare = go.Figure()
-        # Changed target bar to Light Cool Grey/Blue and actual bar to Crisp Corporate Blue
         fig_compare.add_trace(go.Bar(name='Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#E6F0FF'))
         fig_compare.add_trace(go.Bar(name='Your Outflows', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#0052CC'))
         fig_compare.update_layout(barmode='group', height=300, margin=dict(l=20, r=20, t=20, b=20))
@@ -188,13 +165,93 @@ else:
         st.write("#### Resource Distribution Matrix")
         combined_outflows = pd.concat([df_exp, df_sav], ignore_index=True) if (not df_exp.empty or not df_sav.empty) else pd.DataFrame()
         if not combined_outflows.empty:
-            # Custom Black, White, and Blue sequential sequence
             bw_blue_sequence = ['#000000', '#0052CC', '#4C9AFF', '#B3D4FF', '#E6F0FF']
             fig_donut = px.pie(combined_outflows, values='Amount', names='Category', hole=0.4, color_discrete_sequence=bw_blue_sequence)
             fig_donut.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20))
             st.plotly_chart(fig_donut, use_container_width=True)
         else:
             st.caption("Awaiting outflows data mapping.")
+
+    # Row 3: Chatbot Integration & Financial Suggestions Split Matrix
+    st.markdown("---")
+    
+    bot_col1, bot_col2 = st.columns([1, 1])
+    
+    with bot_col1:
+        st.subheader(":material/smart_toy: AI Financial Advisor Chatbot")
+        
+        if not api_key:
+            st.warning("Please enter an OpenAI API Key in the sidebar settings to communicate with your AI Advisor.")
+        else:
+            # Display chat history container
+            chat_container = st.container(height=320)
+            with chat_container:
+                for message in st.session_state["chat_history"]:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+            
+            # User Input Box
+            if user_prompt := st.chat_input("Ask a question (e.g., 'Am I spending too much on Wants?')"):
+                # Append user query
+                st.session_state["chat_history"].append({"role": "user", "content": user_prompt})
+                with chat_container:
+                    with st.chat_message("user"):
+                        st.markdown(user_prompt)
+                
+                # Formulate system instruction containing the exact real-time financial tracking numbers
+                system_instruction = f"""
+                You are a highly analytical, realistic personal wealth advisor. 
+                Answer the user's finance questions using context when helpful. 
+                Current Financial Profiles:
+                - Currency: {currency_symbol}
+                - Total Income: {currency_symbol}{total_income:,.2f}
+                - Total Expenses: {currency_symbol}{total_expenses:,.2f} (Needs: {currency_symbol}{actual_needs:,.2f}, Wants: {currency_symbol}{actual_wants:,.2f})
+                - Total Savings Logged: {currency_symbol}{total_savings:,.2f}
+                - Current Remaining Wallet Balance: {currency_symbol}{remaining_cash:,.2f}
+                - Recommended allocations: Needs 50%, Wants 30%, Savings 20%.
+                Be brief, clear, and direct. Use bullet points for structural clarity.
+                """
+                
+                try:
+                    client = OpenAI(api_key=api_key)
+                    # Prepare message list for API call
+                    api_messages = [{"role": "system", "content": system_instruction}] + [
+                        {"role": m["role"], "content": m["content"]} for m in st.session_state["chat_history"]
+                    ]
+                    
+                    # Generate response
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=api_messages,
+                        temperature=0.5
+                    )
+                    
+                    bot_reply = response.choices[0].message.content
+                    
+                    # Append bot response
+                    st.session_state["chat_history"].append({"role": "assistant", "content": bot_reply})
+                    with chat_container:
+                        with st.chat_message("assistant"):
+                            st.markdown(bot_reply)
+                            
+                except Exception as e:
+                    st.error(f"Failed to communicate with AI: {str(e)}")
+
+    with bot_col2:
+        st.subheader(":material/account_balance_wallet: Strategic Optimization Metrics")
+        
+        sub_col1, sub_col2 = st.columns(2)
+        with sub_col1:
+            st.info(f"**High-Yield Cash Return:** `{HYSA_RATE*100:.2f}% APY` \n\nSecure foundation for your rainy-day reserves.", icon=":material/account_balance:")
+        with sub_col2:
+            st.success(f"**Market Wealth Multiplier:** `{MARKET_RATE*100:.2f}% CAGR` \n\nTarget long-term inflation-beating portfolios.", icon=":material/trending_up:")
+
+        st.markdown(f"**Target Allocations Based on Matrix Calculations:**")
+        st.markdown(f"### :material/shield: Cash Safety Net: **{currency_symbol}{suggested_cash_savings:,.2f}**")
+        st.markdown(f"Projected 1-Year Baseline Interest: `+{currency_symbol}{suggested_cash_savings * HYSA_RATE:,.2f}`")
+        
+        st.markdown(f"### :material/rocket_launch: Compound Investments: **{currency_symbol}{suggested_investments:,.2f}**")
+        st.markdown(f"Projected 10-Year Compounded Matrix: `{currency_symbol}{suggested_investments * ((1 + MARKET_RATE)**10):,.2f}`")
 
     # Row 4: Ledgers
     st.markdown("---")
