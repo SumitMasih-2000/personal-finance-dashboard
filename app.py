@@ -107,6 +107,18 @@ suggested_investments = target_savings_total * 0.70
 actual_needs = df_exp[df_exp["Budget Type"] == "Needs"]["Amount"].sum() if not df_exp.empty else 0.0
 actual_wants = df_exp[df_exp["Budget Type"] == "Wants"]["Amount"].sum() if not df_exp.empty else 0.0
 
+# Feature 1: Financial Health Score Engine
+health_score = 100
+if total_income > 0:
+    if actual_needs > target_needs:
+        health_score -= min(25, int(((actual_needs - target_needs) / target_needs) * 25))
+    if actual_wants > target_wants:
+        health_score -= min(35, int(((actual_wants - target_wants) / target_wants) * 35))
+    if total_savings < target_savings_total:
+        health_score -= min(40, int(((target_savings_total - total_savings) / target_savings_total) * 40))
+else:
+    health_score = 0
+
 logo_image = get_dashboard_logo()
 
 # 4. Dashboard Main View
@@ -127,13 +139,47 @@ else:
     
     st.markdown("---")
     
-    # Row 1: High Level Metrics
-    st.subheader(":material/grid_view: Financial Status Cards")
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
-    kpi_col1.metric("Total Income", f"{currency_symbol}{total_income:,.2f}")
-    kpi_col2.metric("Total Expenses", f"{currency_symbol}{total_expenses:,.2f}")
-    kpi_col3.metric("Total Saved", f"{currency_symbol}{total_savings:,.2f}")
-    kpi_col4.metric("Wallet Balance", f"{currency_symbol}{remaining_cash:,.2f}")
+    # Row 1: High Level Metrics + Gauge
+    kpi_col1, kpi_col2 = st.columns([3, 1])
+    
+    with kpi_col1:
+        st.subheader(":material/grid_view: Financial Status Cards")
+        metric_sub_col1, metric_sub_col2 = st.columns(2)
+        metric_sub_col1.metric("Total Income Inflow", f"{currency_symbol}{total_income:,.2f}")
+        metric_sub_col1.metric("Total Expenses Outflow", f"{currency_symbol}{total_expenses:,.2f}")
+        metric_sub_col2.metric("Total Capital Saved", f"{currency_symbol}{total_savings:,.2f}")
+        metric_sub_col2.metric("Available Liquidity", f"{currency_symbol}{remaining_cash:,.2f}")
+        
+    with kpi_col2:
+        st.markdown("<h3 style='text-align: center; margin-bottom: -20px;'>Health Matrix</h3>", unsafe_allow_html=True)
+        fig_gauge = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = health_score,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            gauge = {
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#FFFFFF"},
+                'bar': {'color': "#0052CC"},
+                'bgcolor': "#111111",
+                'steps': [
+                    {'range': [0, 50], 'color': '#331111'},
+                    {'range': [50, 80], 'color': '#112244'},
+                    {'range': [80, 100], 'color': '#052211'}
+                ],
+            }
+        ))
+        fig_gauge.update_layout(height=200, margin=dict(l=20, r=20, t=40, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_gauge, use_container_width=True)
+
+    st.markdown("---")
+
+    # Feature 2: Automated Smart Advisor Alert Matrix
+    st.subheader(":material/notifications_active: Automated Guardrail Alerts")
+    if actual_wants > target_wants:
+        st.error(f"**Budget Overrun:** Your lifestyle desires ('Wants') exceed the recommended 30% threshold by **{currency_symbol}{actual_wants - target_wants:,.2f}**. Consider scaling down non-essential orders.", icon=":material/warning:")
+    if total_savings >= target_savings_total:
+        st.success(f"**Optimization Target Met:** High performance! You have saved or invested {currency_symbol}{total_savings:,.2f}, hitting your 20% savings objective.", icon=":material/stars")
+    else:
+        st.warning(f"**Savings deficit:** You are **{currency_symbol}{target_savings_total - total_savings:,.2f}** behind the 20% optimum wealth creation milestone.", icon=":material/trending_down:")
 
     st.markdown("---")
 
@@ -147,16 +193,16 @@ else:
         fig_compare = go.Figure()
         fig_compare.add_trace(go.Bar(name='Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#E6F0FF'))
         fig_compare.add_trace(go.Bar(name='Your Outflows', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#0052CC'))
-        fig_compare.update_layout(barmode='group', height=300, margin=dict(l=20, r=20, t=20, b=20))
+        fig_compare.update_layout(barmode='group', height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"))
         st.plotly_chart(fig_compare, use_container_width=True)
         
     with chart_col2:
         st.write("#### Resource Distribution Matrix")
         combined_outflows = pd.concat([df_exp, df_sav], ignore_index=True) if (not df_exp.empty or not df_sav.empty) else pd.DataFrame()
         if not combined_outflows.empty:
-            bw_blue_sequence = ['#000000', '#0052CC', '#4C9AFF', '#B3D4FF', '#E6F0FF']
+            bw_blue_sequence = ['#001F3F', '#0052CC', '#4C9AFF', '#B3D4FF', '#E6F0FF']
             fig_donut = px.pie(combined_outflows, values='Amount', names='Category', hole=0.4, color_discrete_sequence=bw_blue_sequence)
-            fig_donut.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20))
+            fig_donut.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"))
             st.plotly_chart(fig_donut, use_container_width=True)
         else:
             st.caption("Awaiting outflows data mapping.")
@@ -181,9 +227,24 @@ else:
         st.markdown(f"### :material/rocket_launch: Compound Investments: **{currency_symbol}{suggested_investments:,.2f}**")
         st.markdown(f"Projected 10-Year Compounded Matrix: `{currency_symbol}{suggested_investments * ((1 + MARKET_RATE)**10):,.2f}`")
 
-    # Row 4: Ledgers
+    # Row 4: Ledgers & Exports
     st.markdown("---")
-    st.subheader(":material/table_chart: Itemized Statement Ledgers")
+    ledger_header_col1, ledger_header_col2 = st.columns([5, 1])
+    with ledger_header_col1:
+        st.subheader(":material/table_chart: Itemized Statement Ledgers")
+    
+    # Feature 3: Data Export Infrastructure
+    with ledger_header_col2:
+        if not combined_outflows.empty:
+            csv_data = combined_outflows.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Export Ledger CSV",
+                data=csv_data,
+                file_name=f"financial_statement_{datetime.today().strftime('%Y%m%d')}.csv",
+                mime="text/csv",
+                type="secondary"
+            )
+
     table_tabs = st.tabs(["Expense Statements", "Savings Assets", "Income Inflows"])
     with table_tabs[0]:
         if not df_exp.empty: st.dataframe(df_exp.sort_values(by="Date", ascending=False), use_container_width=True)
