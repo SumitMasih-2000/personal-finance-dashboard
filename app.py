@@ -107,17 +107,12 @@ suggested_investments = target_savings_total * 0.70
 actual_needs = df_exp[df_exp["Budget Type"] == "Needs"]["Amount"].sum() if not df_exp.empty else 0.0
 actual_wants = df_exp[df_exp["Budget Type"] == "Wants"]["Amount"].sum() if not df_exp.empty else 0.0
 
-# Feature 1: Financial Health Score Engine
-health_score = 100
+# Dynamic Health Score: Shows retention rate (Savings + Wallet Cash / Total Income)
 if total_income > 0:
-    if actual_needs > target_needs:
-        health_score -= min(25, int(((actual_needs - target_needs) / target_needs) * 25))
-    if actual_wants > target_wants:
-        health_score -= min(35, int(((actual_wants - target_wants) / target_wants) * 35))
-    if total_savings < target_savings_total:
-        health_score -= min(40, int(((target_savings_total - total_savings) / target_savings_total) * 40))
+    retention_rate = ((total_savings + max(0.0, remaining_cash)) / total_income) * 100
+    health_score = min(100.0, max(0.0, retention_rate))
 else:
-    health_score = 0
+    health_score = 0.0
 
 logo_image = get_dashboard_logo()
 
@@ -161,9 +156,9 @@ else:
                 'bar': {'color': "#0052CC"},
                 'bgcolor': "#111111",
                 'steps': [
-                    {'range': [0, 50], 'color': '#331111'},
-                    {'range': [50, 80], 'color': '#112244'},
-                    {'range': [80, 100], 'color': '#052211'}
+                    {'range': [0, 20], 'color': '#331111'},     # Critical / Over-budget
+                    {'range': [20, 40], 'color': '#222222'},    # Low retention
+                    {'range': [40, 100], 'color': '#052211'}    # Balanced / High savings
                 ],
             }
         ))
@@ -172,7 +167,7 @@ else:
 
     st.markdown("---")
 
-    # Feature 2: Automated Smart Advisor Alert Matrix
+    # Automated Smart Advisor Alert Matrix
     st.subheader(":material/notifications_active: Automated Guardrail Alerts")
     if actual_wants > target_wants:
         st.error(f"**Budget Overrun:** Your lifestyle desires ('Wants') exceed the recommended 30% threshold by **{currency_symbol}{actual_wants - target_wants:,.2f}**. Consider scaling down non-essential orders.", icon=":material/warning:")
@@ -233,7 +228,6 @@ else:
     with ledger_header_col1:
         st.subheader(":material/table_chart: Itemized Statement Ledgers")
     
-    # Feature 3: Data Export Infrastructure
     with ledger_header_col2:
         if not combined_outflows.empty:
             csv_data = combined_outflows.to_csv(index=False).encode('utf-8')
