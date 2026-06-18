@@ -12,20 +12,21 @@ from openai import OpenAI
 st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
 
 # Helper function to generate a backup logo if the file is missing
+# Helper function to generate a backup logo if the file is missing
 def get_dashboard_logo():
-    img_path = "financial_advisor.png"
-    if os.path.exists(img_path):
-        try:
-            return Image.open(img_path)
-        except Exception:
-            pass
-    
-    img = Image.new("RGB", (200, 200), color="#000000") 
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([40, 40, 160, 160], fill="#0052CC") 
-    draw.rectangle([70, 90, 90, 140], fill="#FFFFFF") 
-    draw.rectangle([100, 70, 120, 140], fill="#E6F0FF") 
-    return img
+    img_path = "financial_advisor.png"
+    if os.path.exists(img_path):
+        try:
+            return Image.open(img_path)
+        except Exception:
+            pass
+    
+    img = Image.new("RGB", (200, 200), color="#000000") 
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([40, 40, 160, 160], fill="#0052CC") 
+    draw.rectangle([70, 90, 90, 140], fill="#FFFFFF") 
+    draw.rectangle([100, 70, 120, 140], fill="#E6F0FF") 
+    return img
 
 # Initialize session state lists for data if they don't exist
 if "income_records" not in st.session_state:
