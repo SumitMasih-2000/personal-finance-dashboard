@@ -92,5 +92,12 @@ df_inc = pd.DataFrame(st.session_state["income_records"])
 df_exp = pd.DataFrame(st.session_state["expense_records"])
 df_sav = pd.DataFrame(st.session_state["saving_records"])
 
+# 3. Data Processing
+df_inc = pd.DataFrame(st.session_state["income_records"])
+df_exp = pd.DataFrame(st.session_state["expense_records"])
+df_sav = pd.DataFrame(st.session_state["saving_records"])
+
 total_income = df_inc["Amount"].sum() if not df_inc.empty else 0.0
-total_expenses = df_exp["Amount"].sum() if not df_exp.empty else
+total_expenses = df_exp["Amount"].sum() if not df_exp.empty else 0.0
+total_savings = df_sav["Amount"].sum() if not df_sav.empty else 0.0
+remaining_cash = total_income - total_expenses - total_savings
