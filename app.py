@@ -199,21 +199,27 @@ else:
                         st.markdown(user_prompt)
                 
                 # Formulate system instruction containing the exact real-time financial tracking numbers
-                system_instruction = f"""
-                You are a highly analytical, realistic personal wealth advisor. 
-                Answer the user's finance questions using context when helpful. 
-                Current Financial Profiles:
-                - Currency: {currency_symbol}
-                - Total Income: {currency_symbol}{total_income:,.2f}
-                - Total Expenses: {currency_symbol}{total_expenses:,.2f} (Needs: {currency_symbol}{actual_needs:,.2f}, Wants: {currency_symbol}{actual_wants:,.2f})
-                - Total Savings Logged: {currency_symbol}{total_savings:,.2f}
-                - Current Remaining Wallet Balance: {currency_symbol}{remaining_cash:,.2f}
-                - Recommended allocations: Needs 50%, Wants 30%, Savings 20%.
-                Be brief, clear, and direct. Use bullet points for structural clarity.
-                """
-                
-                try:
-                    client = OpenAI(api_key=api_key)
+                # Formulate system instruction containing the exact real-time financial tracking numbers and return interest rates
+system_instruction = f"""
+You are an expert, highly analytical personal wealth optimization AI. 
+Your purpose is to answer user queries comprehensively regarding income, expenses, savings strategies, and investment parameters.
+
+Active Financial Ledger Values to Use in Calculations:
+- Currency Base: {currency_symbol}
+- Total Income Inflow: {currency_symbol}{total_income:,.2f}
+- Current Expenses Outflow: {currency_symbol}{total_expenses:,.2f} (Needs: {currency_symbol}{actual_needs:,.2f} vs Target: {currency_symbol}{target_needs:,.2f} | Wants: {currency_symbol}{actual_wants:,.2f} vs Target: {currency_symbol}{target_wants:,.2f})
+- Total Allocated Savings: {currency_symbol}{total_savings:,.2f} (Target allocation setup: {currency_symbol}{target_savings_total:,.2f})
+- Free Wallet Cash Balance: {currency_symbol}{remaining_cash:,.2f}
+
+Fixed Baseline Return Interest Rates:
+1. High-Yield Cash Savings (HYSA): {HYSA_RATE*100:.2f}% APY
+2. Market Equity / Index Fund Multiplier: {MARKET_RATE*100:.2f}% CAGR
+
+Analytical Directives:
+- If asked about savings or investments, project potential wealth creation out 1-year, 5-years, or 10-years using the active interest rates provided above.
+- Provide actionable recommendations derived exactly from the data gaps between their Target Matrix allocations and Actual performance.
+- Respond with extreme precision using bullet points and tables where appropriate. Keep it concise but deeply informative.
+"""
                     # Prepare message list for API call
                     api_messages = [{"role": "system", "content": system_instruction}] + [
                         {"role": m["role"], "content": m["content"]} for m in st.session_state["chat_history"]
