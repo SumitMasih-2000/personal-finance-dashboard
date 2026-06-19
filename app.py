@@ -9,8 +9,7 @@ from PIL import Image, ImageDraw
 # 1. Page Configuration & Custom Theme Overrides
 st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
 
-# Custom CSS to transition away from default light grey backgrounds
-# Custom CSS to transition away from default light grey backgrounds and enforce pure white text
+# Custom CSS to force premium dark look and high-contrast white text
 st.markdown("""
     <style>
         /* Main App Background and base text */
@@ -45,6 +44,7 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
 # Helper function to generate a backup logo if the file is missing
 def get_dashboard_logo():
     img_path = "financial_advisor.png"
@@ -69,15 +69,12 @@ if "expense_records" not in st.session_state:
 if "saving_records" not in st.session_state:
     st.session_state["saving_records"] = []
 if "financial_goals" not in st.session_state:
-    # Seed default baseline goals
     st.session_state["financial_goals"] = [
         {"Goal Name": "Emergency Safety Net", "Target": 5000.0, "Current": 1200.0},
         {"Goal Name": "Wealth Investment Milestone", "Target": 25000.0, "Current": 4500.0}
     ]
 
 # 2. Sidebar Settings & Forms
-
-# VERTICAL ACCENT 1: Global Settings
 st.sidebar.markdown(
     """
     <div style="border-left: 5px solid #0052CC; padding-left: 10px; margin-bottom: 15px;">
@@ -93,7 +90,6 @@ MARKET_RATE = 0.090
 
 st.sidebar.markdown("---")
 
-# VERTICAL ACCENT 2: Add New Records
 st.sidebar.markdown(
     """
     <div style="border-left: 5px solid #0052CC; padding-left: 10px; margin-bottom: 15px;">
@@ -197,118 +193,103 @@ else:
 
 logo_image = get_dashboard_logo()
 
-# 4. Dashboard Main View Layout
+# 4. Main View Layout (Always Visible Now)
+title_col1, title_col2 = st.columns([1, 6]) 
+with title_col1:
+    st.image(logo_image, use_container_width=True) 
+with title_col2:
+    st.title("Smart Personal Finance Hub")
+    st.markdown("### *Active Wealth Optimization & Forward Projections*")
+
 if total_income == 0:
-    welcome_col1, welcome_col2 = st.columns([1, 6])
-    with welcome_col1:
-        st.image(logo_image, use_container_width=True)
-    with welcome_col2:
-        st.title("Smart Personal Finance Hub")
-        st.info("Welcome! Please log an **Income Source** in the sidebar to populate your financial engine dashboard.", icon=":material/info:")
-else:
-    title_col1, title_col2 = st.columns([1, 6]) 
-    with title_col1:
-        st.image(logo_image, use_container_width=True) 
-    with title_col2:
-        st.title("Smart Personal Finance Hub")
-        st.markdown("### *Active Wealth Optimization & Forward Projections*")
+    st.info("👋 Welcome! The interface is live. Please log an **Income Source** in the sidebar to populate data trends.", icon=":material/info:")
+
+st.markdown("---")
+
+# Row 1: Status Cards & Gauge Visualizer
+kpi_col1, kpi_col2 = st.columns([3, 1])
+
+with kpi_col1:
+    st.subheader(":material/grid_view: Financial Liquidity Cards")
+    metric_sub_col1, metric_sub_col2 = st.columns(2)
+    metric_sub_col1.metric("Total Income Inflow", f"{currency_symbol}{total_income:,.2f}")
+    metric_sub_col1.metric("Total Expenses Outflow", f"{currency_symbol}{total_expenses:,.2f}")
+    metric_sub_col2.metric("Total Capital Saved", f"{currency_symbol}{total_savings:,.2f}")
+    metric_sub_col2.metric("Available Liquidity", f"{currency_symbol}{remaining_cash:,.2f}")
     
-    st.markdown("---")
+with kpi_col2:
+    st.markdown("<h4 style='text-align: center; margin-bottom: -10px;'>Health Score Matrix</h4>", unsafe_allow_html=True)
+    fig_gauge = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = health_score,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        gauge = {
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#E2E8F0"},
+            'bar': {'color': "#0052CC"},
+            'bgcolor': "#1A233A",
+            'steps': [
+                {'range': [0, 20], 'color': '#4A151B'},     
+                {'range': [20, 50], 'color': '#2C3E50'},    
+                {'range': [50, 100], 'color': '#114B3E'}    
+            ],
+        }
+    ))
+    fig_gauge.update_layout(height=180, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+    st.plotly_chart(fig_gauge, use_container_width=True)
+
+st.markdown("---")
+
+# FEATURE A: Goals Ledger
+st.subheader("🎯 Active Milestone Goals Progression Tracker")
+goal_cols = st.columns(len(st.session_state["financial_goals"]))
+for idx, goal in enumerate(st.session_state["financial_goals"]):
+    with goal_cols[idx % len(goal_cols)]:
+        current_allocation = goal["Current"] + total_savings if (total_savings > 0 and idx == 0) else goal["Current"]
+        progress_pct = min(1.0, current_allocation / goal["Target"])
+        st.markdown(f"**{goal['Goal Name']}**")
+        st.progress(progress_pct)
+        st.caption(f"{currency_symbol}{current_allocation:,.2f} of {currency_symbol}{goal['Target']:,.2f} ({progress_pct*100:.1f}%)")
+
+st.markdown("---")
+
+# Visualizations Matrix & Dynamic Forecasting
+st.subheader(":material/analytics: Analytical Matrix Models")
+chart_col1, chart_col2 = st.columns(2)
+
+with chart_col1:
+    st.write("#### Budget Allocations vs. Outflows")
+    categories = ['Needs (50%)', 'Wants (30%)', 'Savings (20%)']
+    fig_compare = go.Figure()
+    fig_compare.add_trace(go.Bar(name='Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#1E293B'))
+    fig_compare.add_trace(go.Bar(name='Actual Activity', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#0052CC'))
+    fig_compare.update_layout(barmode='group', height=280, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#E2E8F0"))
+    st.plotly_chart(fig_compare, use_container_width=True)
     
-    # Row 1: Status Cards & Gauge Visualizer
-    kpi_col1, kpi_col2 = st.columns([3, 1])
+with chart_col2:
+    st.write("#### 12-Month Predictive Net Worth Forward Projection")
+    months = [datetime.today().strftime('%b %y')]
+    projected_wealth = [remaining_cash + total_savings]
+    monthly_velocity = total_income - total_expenses
     
-    with kpi_col1:
-        st.subheader(":material/grid_view: Financial Liquidity Cards")
-        metric_sub_col1, metric_sub_col2 = st.columns(2)
-        metric_sub_col1.metric("Total Income Inflow", f"{currency_symbol}{total_income:,.2f}")
-        metric_sub_col1.metric("Total Expenses Outflow", f"{currency_symbol}{total_expenses:,.2f}")
-        metric_sub_col2.metric("Total Capital Saved", f"{currency_symbol}{total_savings:,.2f}")
-        metric_sub_col2.metric("Available Liquidity", f"{currency_symbol}{remaining_cash:,.2f}")
+    for m in range(1, 13):
+        future_date = datetime.today() + timedelta(days=30 * m)
+        months.append(future_date.strftime('%b %y'))
+        compounded_step = (projected_wealth[-1] + monthly_velocity) * (1 + (MARKET_RATE / 12))
+        projected_wealth.append(compounded_step)
         
-    with kpi_col2:
-        st.markdown("<h4 style='text-align: center; margin-bottom: -10px;'>Health Score Matrix</h4>", unsafe_allow_html=True)
-        fig_gauge = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = health_score,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            gauge = {
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#E2E8F0"},
-                'bar': {'color': "#0052CC"},
-                'bgcolor': "#1A233A",
-                'steps': [
-                    {'range': [0, 20], 'color': '#4A151B'},     
-                    {'range': [20, 50], 'color': '#2C3E50'},    
-                    {'range': [50, 100], 'color': '#114B3E'}    
-                ],
-            }
-        ))
-        fig_gauge.update_layout(height=180, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-        st.plotly_chart(fig_gauge, use_container_width=True)
+    fig_trend = px.line(x=months, y=projected_wealth, markers=True, labels={'x': 'Timeline Horizon', 'y': 'Capital Base'})
+    fig_trend.update_traces(line_color='#4C9AFF', fill='tozeroy', fillcolor='rgba(76, 154, 255, 0.1)')
+    fig_trend.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#E2E8F0"))
+    st.plotly_chart(fig_trend, use_container_width=True)
 
-    st.markdown("---")
+# Statements Ledger Breakdown
+st.markdown("---")
+st.subheader(":material/table_chart: Itemized Statement Ledgers")
 
-    # FEATURE A: Dynamic Goals Ledger
-    st.subheader("🎯 Active Milestone Goals Progression Tracker")
-    goal_cols = st.columns(len(st.session_state["financial_goals"]))
-    for idx, goal in enumerate(st.session_state["financial_goals"]):
-        with goal_cols[idx % len(goal_cols)]:
-            # Dynamic matching optimization
-            if total_savings > 0 and idx == 0:
-                # Add real ledger additions incrementally to goal one
-                current_allocation = goal["Current"] + total_savings
-            else:
-                current_allocation = goal["Current"]
-                
-            progress_pct = min(1.0, current_allocation / goal["Target"])
-            st.markdown(f"**{goal['Goal Name']}**")
-            st.progress(progress_pct)
-            st.caption(f"{currency_symbol}{current_allocation:,.2f} of {currency_symbol}{goal['Target']:,.2f} ({progress_pct*100:.1f}%)")
-
-    st.markdown("---")
-
-    # Visualizations Matrix & Dynamic Forecasting
-    st.subheader(":material/analytics: Analytical Matrix Models")
-    chart_col1, chart_col2 = st.columns(2)
-    
-    with chart_col1:
-        st.write("#### Budget Allocations vs. Outflows")
-        categories = ['Needs (50%)', 'Wants (30%)', 'Savings (20%)']
-        fig_compare = go.Figure()
-        fig_compare.add_trace(go.Bar(name='Target Target Matrix', x=categories, y=[target_needs, target_wants, target_savings_total], marker_color='#1E293B'))
-        fig_compare.add_trace(go.Bar(name='Actual Activity', x=categories, y=[actual_needs, actual_wants, total_savings], marker_color='#0052CC'))
-        fig_compare.update_layout(barmode='group', height=280, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#E2E8F0"))
-        st.plotly_chart(fig_compare, use_container_width=True)
-        
-    with chart_col2:
-        # FEATURE B: Predictive Modeling Visualization
-        st.write("#### 12-Month Predictive Net Worth Forward Projection")
-        months = [datetime.today().strftime('%b %y')]
-        projected_wealth = [remaining_cash + total_savings]
-        
-        # Calculate velocity trend metrics
-        monthly_velocity = total_income - total_expenses
-        
-        for m in range(1, 13):
-            future_date = datetime.today() + timedelta(days=30 * m)
-            months.append(future_date.strftime('%b %y'))
-            # Factor compound growth interest metrics dynamically over 12 months
-            compounded_step = (projected_wealth[-1] + monthly_velocity) * (1 + (MARKET_RATE / 12))
-            projected_wealth.append(compounded_step)
-            
-        fig_trend = px.line(x=months, y=projected_wealth, markers=True, labels={'x': 'Timeline Horizon', 'y': 'Capital Base'})
-        fig_trend.update_traces(line_color='#4C9AFF', fill='tozeroy', fillcolor='rgba(76, 154, 255, 0.1)')
-        fig_trend.update_layout(height=280, margin=dict(l=20, r=20, t=20, b=20), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color="#E2E8F0"))
-        st.plotly_chart(fig_trend, use_container_width=True)
-
-    # Statements Ledger Breakdown
-    st.markdown("---")
-    st.subheader(":material/table_chart: Itemized Statement Ledgers")
-    
-    table_tabs = st.tabs(["Expense Inflow Statements", "Savings Assets", "Income Inflows"])
-    with table_tabs[0]:
-        if not df_exp.empty: st.dataframe(df_exp.sort_values(by="Date", ascending=False), use_container_width=True)
-    with table_tabs[1]:
-        if not df_sav.empty: st.dataframe(df_sav.sort_values(by="Date", ascending=False), use_container_width=True)
-    with table_tabs[2]:
-        if not df_inc.empty: st.dataframe(df_inc.sort_values(by="Date", ascending=False), use_container_width=True)
+table_tabs = st.tabs(["Expense Inflow Statements", "Savings Assets", "Income Inflows"])
+with table_tabs[0]:
+    st.dataframe(df_exp.sort_values(by="Date", ascending=False) if not df_exp.empty else pd.DataFrame(columns=["Date", "Description", "Category", "Budget Type", "Amount"]), use_container_width=True)
+with table_tabs[1]:
+    st.dataframe(df_sav.sort_values(by="Date", ascending=False) if not df_sav.empty else pd.DataFrame(columns=["Date", "Description", "Category", "Budget Type", "Amount"]), use_container_width=True)
+with table_tabs[2]:
+    st.dataframe(df_inc.sort_values(by="Date", ascending=False) if not df_inc.empty else pd.DataFrame(columns=["Date", "Description", "Amount", "Type"]), use_container_width=True)
