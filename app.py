@@ -10,30 +10,41 @@ from PIL import Image, ImageDraw
 st.set_page_config(page_title="Smart Finance Tracker", layout="wide")
 
 # Custom CSS to transition away from default light grey backgrounds
+# Custom CSS to transition away from default light grey backgrounds and enforce pure white text
 st.markdown("""
     <style>
-        /* Main App Background */
+        /* Main App Background and base text */
         .stApp {
             background-color: #0E131F;
-            color: #E2E8F0;
+            color: #FFFFFF !important;
+        }
+        /* Enforce header and standard markdown text color tags */
+        h1, h2, h3, h4, h5, h6, p, label, .stMarkdown {
+            color: #FFFFFF !important;
         }
         /* Sidebar container adjustment */
         section[data-testid="stSidebar"] {
             background-color: #151C2C !important;
         }
-        /* Card-like block aesthetics */
+        section[data-testid="stSidebar"] h1, 
+        section[data-testid="stSidebar"] h2, 
+        section[data-testid="stSidebar"] h3, 
+        section[data-testid="stSidebar"] p,
+        section[data-testid="stSidebar"] label {
+            color: #FFFFFF !important;
+        }
+        /* Highlight value metrics beautifully */
         div[data-testid="stMetricValue"] {
             color: #4C9AFF !important;
             font-weight: bold;
         }
-        /* Style expanding boxes and forms */
+        /* Style expanding input forms nicely */
         .stExpander {
             background-color: #1A233A !important;
             border: 1px solid #2D3748 !important;
         }
     </style>
 """, unsafe_allow_html=True)
-
 # Helper function to generate a backup logo if the file is missing
 def get_dashboard_logo():
     img_path = "financial_advisor.png"
