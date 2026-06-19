@@ -75,14 +75,6 @@ if "financial_goals" not in st.session_state:
     ]
 
 # 2. Sidebar Settings & Forms
-st.sidebar.markdown(
-    """
-    <div style="border-left: 5px solid #0052CC; padding-left: 10px; margin-bottom: 15px;">
-        <h3 style="margin:0; padding:0; font-size: 1.15rem; color: #FFFFFF;">🌍 Global Settings</h3>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
 currency_symbol = st.sidebar.selectbox("Select Currency:", ["$", "₹", "€", "£", "¥"], index=0)
 
 HYSA_RATE = 0.0425  
@@ -93,7 +85,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
     <div style="border-left: 5px solid #0052CC; padding-left: 10px; margin-bottom: 15px;">
-        <h3 style="margin:0; padding:0; font-size: 1.15rem; color: #FFFFFF;">📝 Operational Ledger</h3>
+        <h3 style="margin:0; padding:0; font-size: 1.15rem; color: #FFFFFF;">Operational Ledger</h3>
     </div>
     """, 
     unsafe_allow_html=True
@@ -102,7 +94,7 @@ st.sidebar.markdown(
 # FORM A: INCOME
 with st.sidebar.expander("Add Income Source", expanded=False):
     with st.form("income_form", clear_on_submit=True):
-        st.markdown("#### :material/input: Log Income")
+        st.markdown("#### Log Income")
         inc_date = st.date_input("Date Received", value=datetime.today(), key="inc_date")
         inc_desc = st.text_input("Source", placeholder="e.g., Monthly Salary")
         inc_amt = st.number_input("Amount", min_value=0.0, step=10.0, format="%.2f")
@@ -112,12 +104,12 @@ with st.sidebar.expander("Add Income Source", expanded=False):
                 "Date": pd.to_datetime(inc_date), "Description": inc_desc, 
                 "Amount": inc_amt, "Type": "Recurring" if is_recurring_inc else "One-Time"
             })
-            st.toast("Income added successfully!", icon=":material/check_circle:")
+            st.toast("Income added successfully!")
 
 # FORM B: EXPENSE
 with st.sidebar.expander("Add Expense", expanded=False):
     with st.form("expense_form", clear_on_submit=True):
-        st.markdown("#### :material/receipt: Log Expense")
+        st.markdown("#### Log Expense")
         exp_date = st.date_input("Date Paid", value=datetime.today(), key="exp_date")
         exp_desc = st.text_input("Item", placeholder="e.g., Groceries")
         exp_cat = st.selectbox("Category", ["Housing", "Food", "Utilities", "Entertainment", "Transport", "Health", "Other"])
@@ -130,12 +122,12 @@ with st.sidebar.expander("Add Expense", expanded=False):
                 "Category": exp_cat, "Budget Type": exp_type, "Amount": exp_amt,
                 "Type": "Recurring" if is_recurring_exp else "One-Time"
             })
-            st.toast("Expense added successfully!", icon=":material/check_circle:")
+            st.toast("Expense added successfully!")
 
 # FORM C: SAVINGS & INVESTMENTS
 with st.sidebar.expander("Add Savings/Investment", expanded=False):
     with st.form("savings_form", clear_on_submit=True):
-        st.markdown("#### :material/savings: Log Savings")
+        st.markdown("#### Log Savings")
         sav_date = st.date_input("Date Saved", value=datetime.today(), key="sav_date")
         sav_desc = st.text_input("Goal/Fund Name", placeholder="e.g., Index Fund")
         sav_cat = st.selectbox("Type", ["HYSA/Cash Savings", "Stock Market/ETF", "Insurance/Retirement"])
@@ -145,13 +137,13 @@ with st.sidebar.expander("Add Savings/Investment", expanded=False):
                 "Date": pd.to_datetime(sav_date), "Description": sav_desc, 
                 "Category": sav_cat, "Budget Type": "Savings", "Amount": sav_amt
             })
-            st.toast("Savings recorded!", icon=":material/check_circle:")
+            st.toast("Savings recorded!")
 
 # FORM D: GOAL SETTER
-with st.sidebar.expander("🎯 Define Milestone Goals", expanded=False):
+with st.sidebar.expander("Define Milestone Goals", expanded=False):
     with st.form("goal_form", clear_on_submit=True):
         goal_name = st.text_input("Goal Name", placeholder="e.g., House Downpayment")
-        goal_target = st.number_input("Target Amount Target", min_value=1.0, value=1000.0)
+        goal_target = st.number_input("Target Amount", min_value=1.0, value=1000.0)
         goal_initial = st.number_input("Currently Saved Allocation", min_value=0.0, value=0.0)
         if st.form_submit_button("Create Goal"):
             st.session_state["financial_goals"].append({"Goal Name": goal_name, "Target": goal_target, "Current": goal_initial})
@@ -159,7 +151,6 @@ with st.sidebar.expander("🎯 Define Milestone Goals", expanded=False):
 
 # RESET SYSTEM
 st.sidebar.markdown("---")
-st.sidebar.header(":material/settings:")
 if st.sidebar.button("Reset Dashboard Data", type="primary"):
     st.session_state.clear()
     st.toast("All data reset!")
@@ -193,7 +184,7 @@ else:
 
 logo_image = get_dashboard_logo()
 
-# 4. Main View Layout (Always Visible Now)
+# 4. Main View Layout
 title_col1, title_col2 = st.columns([1, 6]) 
 with title_col1:
     st.image(logo_image, use_container_width=True) 
@@ -202,20 +193,20 @@ with title_col2:
     st.markdown("### *Active Wealth Optimization & Forward Projections*")
 
 if total_income == 0:
-    st.info("👋 Welcome! The interface is live. Please log an **Income Source** in the sidebar to populate data trends.", icon=":material/info:")
+    st.info("Welcome! The interface is live. Please log an Income Source in the sidebar to populate data trends.")
 
 st.markdown("---")
 
-# Row 1: Status Cards & Gauge Visualizer
+# Row 1: Simplified Metrics & Gauge Visualizer
 kpi_col1, kpi_col2 = st.columns([3, 1])
 
 with kpi_col1:
-    st.subheader(":material/grid_view: Financial Liquidity Cards")
+    st.subheader("Financial Liquidity Cards")
     metric_sub_col1, metric_sub_col2 = st.columns(2)
-    metric_sub_col1.metric("Total Income Inflow", f"{currency_symbol}{total_income:,.2f}")
-    metric_sub_col1.metric("Total Expenses Outflow", f"{currency_symbol}{total_expenses:,.2f}")
-    metric_sub_col2.metric("Total Capital Saved", f"{currency_symbol}{total_savings:,.2f}")
-    metric_sub_col2.metric("Available Liquidity", f"{currency_symbol}{remaining_cash:,.2f}")
+    metric_sub_col1.metric("Income", f"{currency_symbol}{total_income:,.2f}")
+    metric_sub_col1.metric("Expense", f"{currency_symbol}{total_expenses:,.2f}")
+    metric_sub_col2.metric("Saving", f"{currency_symbol}{total_savings:,.2f}")
+    metric_sub_col2.metric("Available Balance", f"{currency_symbol}{remaining_cash:,.2f}")
     
 with kpi_col2:
     st.markdown("<h4 style='text-align: center; margin-bottom: -10px;'>Health Score Matrix</h4>", unsafe_allow_html=True)
@@ -239,8 +230,8 @@ with kpi_col2:
 
 st.markdown("---")
 
-# FEATURE A: Goals Ledger
-st.subheader("🎯 Active Milestone Goals Progression Tracker")
+# Goals Tracker Layout (No emoticons)
+st.subheader("Active Milestone Goals Progression Tracker")
 goal_cols = st.columns(len(st.session_state["financial_goals"]))
 for idx, goal in enumerate(st.session_state["financial_goals"]):
     with goal_cols[idx % len(goal_cols)]:
@@ -253,7 +244,7 @@ for idx, goal in enumerate(st.session_state["financial_goals"]):
 st.markdown("---")
 
 # Visualizations Matrix & Dynamic Forecasting
-st.subheader(":material/analytics: Analytical Matrix Models")
+st.subheader("Analytical Matrix Models")
 chart_col1, chart_col2 = st.columns(2)
 
 with chart_col1:
@@ -284,7 +275,7 @@ with chart_col2:
 
 # Statements Ledger Breakdown
 st.markdown("---")
-st.subheader(":material/table_chart: Itemized Statement Ledgers")
+st.subheader("Itemized Statement Ledgers")
 
 table_tabs = st.tabs(["Expense Inflow Statements", "Savings Assets", "Income Inflows"])
 with table_tabs[0]:
